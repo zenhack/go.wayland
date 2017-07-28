@@ -1,0 +1,28 @@
+/* {{ .Description }} */
+type {{ .Name.Exported }} interface {
+{{- range .Requests }}
+	/* {{ .Description }}
+
+	{{ template "paramdoc" .Args }}
+	*/
+	{{ .Name.Exported }}({{ template "arglist" .Args }}) error
+{{ end -}}
+{{- range .Events }}
+	/* {{ .Description }}
+
+	{{ template "paramdoc" .Args }}
+	*/
+	On{{ .Name.Exported }}(cb func({{ template "arglist" .Args }})) error
+{{ end -}}
+}
+
+type {{ .Name.Local }} remoteObject
+
+{{- range $req := .Requests }}
+func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
+	{{- template "arglist" $req.Args }}) (
+	{{- template "returnlist" $req.Args }} error) {
+	var hdr Header
+	hdr.Sender = o.id
+}
+{{ end -}}

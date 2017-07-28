@@ -1,0 +1,7 @@
+{{ if . }}
+Parameters:
+
+{{ range . -}}
+{{ .Name.Local }} - {{ .Summary }}
+{{ end -}}
+{{ end }}

@@ -1,0 +1,5 @@
+{{ range . -}}
+{{- if ne .Type "new_id" -}}
+{{ .Name.Local }} {{ .Type.GoName }},
+{{- end -}}
+{{  end -}}

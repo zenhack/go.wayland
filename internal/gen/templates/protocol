@@ -1,0 +1,12 @@
+package wayland
+
+// This file is generated from ../../wayland.xml, which contains the following
+// copyright notice:
+
+/*
+{{ .Copyright }}
+*/
+
+{{ range .Interfaces }}
+{{ template "interface" . }}
+{{ end }}
