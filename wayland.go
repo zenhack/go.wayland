@@ -16,6 +16,10 @@ type Fixed struct {
 
 type ObjectId uint32
 
+type Object interface {
+	Id() ObjectId
+}
+
 type Header struct {
 	Sender ObjectId
 	Opcode uint16

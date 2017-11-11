@@ -1,5 +1,6 @@
 /* {{ .Description }} */
 type {{ .Name.Exported }} interface {
+	Object
 {{- range .Requests }}
 	/* {{ .Description }}
 
@@ -39,7 +40,7 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- range $arg := $req.Args }}
 		typeWrapper_{{ $arg.Type }}({{ $arg.Name.Local }}).WriteTo(buf)
 	{{- end }}
-	_, err = c.conn.Write(buf.Bytes())
+	_, err := o.conn.Write(buf.Bytes())
 	return err
 }
 {{ end -}}

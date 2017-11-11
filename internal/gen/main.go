@@ -47,7 +47,7 @@ type Arg struct {
 	Name      WlName `xml:"name,attr"`
 	Type      WlType `xml:"type,attr"`
 	Summary   string `xml:"summary,attr"`
-	Interface string `xml:"interface,attr"`
+	Interface WlName `xml:"interface,attr"`
 }
 
 type Enum struct {
