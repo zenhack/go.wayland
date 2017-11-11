@@ -1,6 +1,6 @@
 package wayland
 
-// This file is generated from ../../wayland.xml, which contains the following
+// This file is generated from ./wayland.xml, which contains the following
 // copyright notice:
 
 /*
