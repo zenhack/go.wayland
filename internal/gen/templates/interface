@@ -23,24 +23,30 @@ type {{ .Name.Local }} remoteObject
 func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- template "arglist" $req.Args }}) (
 	{{- template "returnlist" $req.Args }} error) {
-	var hdr Header
-	hdr.Sender = o.id
 	o.conn.lock.Lock()
 	defer o.conn.lock.Unlock()
+	hdr := Header{
+		Sender: o.id,
+		Size: 8,
+	}
 	{{- range $arg := $req.Args }}
 		{{- if eq $arg.Type "new_id" }}
 		{{ $arg.Name.Local }} := o.conn.newId()
 		{{- end }}
 	{{- end }}
 	{{- range $arg := $req.Args }}
-		hdr.Size += typeWrapper_{{ $arg.Type }}({{ $arg.Name.Local }}).Size()
+		hdr.Size += sizeOf_{{ $arg.Type }}({{ $arg.Name.Local }})
 	{{- end }}
-	buf := bytes.NewBuffer(make([]byte, 0, hdr.Size + 8))
+	buf := bytes.NewBuffer(make([]byte, 0, hdr.Size))
 	hdr.WriteTo(buf)
+	fds := []int{}
 	{{- range $arg := $req.Args }}
-		typeWrapper_{{ $arg.Type }}({{ $arg.Name.Local }}).WriteTo(buf)
+		{{- if eq $arg.Type "fd" }}
+		fds = append(fds, {{ $arg.Name.Local }})
+		{{- else }}
+		write_{{ $arg.Type }}(buf, {{ $arg.Name.Local }})
+		{{- end -}}
 	{{- end }}
-	_, err := o.conn.Write(buf.Bytes())
-	return err
+	return o.conn.send(buf.Bytes(), fds)
 }
 {{ end -}}

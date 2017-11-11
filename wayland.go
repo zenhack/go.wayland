@@ -3,7 +3,9 @@ package wayland
 //go:generate go run internal/gen/main.go
 
 import (
+	"golang.org/x/sys/unix"
 	"io"
+	"net"
 	"sync"
 )
 
@@ -36,7 +38,14 @@ func (h Header) WriteTo(w io.Writer) (int64, error) {
 
 type Conn struct {
 	lock   sync.Mutex
+	addr   *net.UnixAddr
+	socket *net.UnixConn
 	nextId uint32
+}
+
+func (c *Conn) send(data []byte, fds []int) error {
+	_, _, err := c.socket.WriteMsgUnix(data, unix.UnixRights(fds...), c.addr)
+	return err
 }
 
 func (c *Conn) newId() uint32 {

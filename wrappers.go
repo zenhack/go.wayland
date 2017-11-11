@@ -4,62 +4,45 @@ import (
 	"io"
 )
 
-type typeWrapper_new_id ObjectId
-type typeWrapper_int int32
-type typeWrapper_uint uint32
-type typeWrapper_Fixed Fixed
-type typeWrapper_fd int
-type typeWrapper_string string
+func sizeOf_new_id(uint32) uint16 { return 4 }
+func sizeOf_int(int32) uint16     { return 4 }
+func sizeOf_uint(uint32) uint16   { return 4 }
+func sizeOf_Fixed(Fixed) uint16   { return 4 }
+func sizeOf_object(Object) uint16 { return 4 }
+func sizeOf_fd(int) uint16        { return 0 }
 
-func (typeWrapper_new_id) Size() uint16 { return 4 }
-func (typeWrapper_int) Size() uint16    { return 4 }
-func (typeWrapper_uint) Size() uint16   { return 4 }
-func (typeWrapper_Fixed) Size() uint16  { return 4 }
-func (typeWrapper_fd) Size() uint16     { return 0 }
-
-func (s typeWrapper_string) Size() uint16 {
-	return 4 + ceil32(len(s)+1)
+func sizeOf_string(s string) uint16 {
+	// XXX: we need to make sure this doesn't overflow somehow.
+	return uint16(4 + ceil32(len(s)+1))
 }
 
 func writeU32(w io.Writer, val uint32) (int64, error) {
 	var buf [4]byte
 	hostEndian.PutUint32(buf[:], val)
-	n, err := w.Write(buf)
+	n, err := w.Write(buf[:])
 	return int64(n), err
 }
 
-func (v typeWrapper_new_id) WriteTo(w io.Writer) (n int64, err error) {
-	return writeU32(w, uint32(v))
-}
+func write_new_id(w io.Writer, val uint32) (int64, error) { return writeU32(w, uint32(val)) }
+func write_int(w io.Writer, val int32) (int64, error)     { return writeU32(w, uint32(val)) }
+func write_uint(w io.Writer, val uint32) (int64, error)   { return writeU32(w, uint32(val)) }
+func write_Fixed(w io.Writer, val Fixed) (int64, error)   { return writeU32(w, val.value) }
+func write_object(w io.Writer, val Object) (int64, error) { return writeU32(w, uint32(val.Id())) }
+func write_fd(w io.Writer, val ObjectId) (int64, error)   { return 0, nil }
 
-func (v typeWrapper_int) WriteTo(w io.Writer) (n int64, err error) {
-	return writeU32(w, uint32(v))
-}
-
-func (v typeWrapper_uint) WriteTo(w io.Writer) (n int64, err error) {
-	return writeU32(w, uint32(v))
-}
-
-func (v typeWrapper_Fixed) WriteTo(w io.Writer) (n int64, err error) {
-	return writeU32(w, uint32(v))
-}
-
-func (typeWrapper_fd) WriteTo(w io.Writer) (int64, error) {
-	return 0, nil
-}
-
-func (s typeWrapper_string) WriteTo(w io.Writer) (n int64, err error) {
+func write_string(w io.Writer, s string) (n int64, err error) {
 	n, err = writeU32(w, uint32(len(s)))
 	if err != nil {
 		return
 	}
 	n_, err := w.Write([]byte(s))
-	n += uint64(n_)
+	n += int64(n_)
 	if err != nil {
 		return
 	}
-	padding := ceil32(len(s)+1) - len(s)
-	n_, err = w.Write(buf32[:padding])
-	n += uint64(n_)
+	var padding [4]byte
+	padding_size := ceil32(len(s)+1) - len(s)
+	n_, err = w.Write(padding[:padding_size])
+	n += int64(n_)
 	return
 }
