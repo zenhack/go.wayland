@@ -3,6 +3,7 @@ package wayland
 //go:generate go run internal/gen/main.go
 
 import (
+	"io"
 	"sync"
 )
 
@@ -19,6 +20,14 @@ type Header struct {
 	Sender ObjectId
 	Opcode uint16
 	Size   uint16
+}
+
+func (h Header) WriteTo(w io.Writer) (int64, error) {
+	var buf [8]byte
+	hostEndian.PutUint32(buf[:4], uint32(h.Sender))
+	hostEndian.PutUint32(buf[4:], uint32(h.Size)<<16|uint32(h.Opcode))
+	n, err := w.Write(buf[:])
+	return int64(n), err
 }
 
 type Conn struct {

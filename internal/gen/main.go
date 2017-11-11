@@ -76,6 +76,9 @@ func (t WlType) GoName() string {
 		return "int32"
 	case "fixed":
 		return "Fixed"
+	case "array":
+		// TODO: the spec doesn't say anything about the element type.
+		return "[]byte"
 	default:
 		return string(t)
 	}

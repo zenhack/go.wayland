@@ -24,5 +24,22 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- template "returnlist" $req.Args }} error) {
 	var hdr Header
 	hdr.Sender = o.id
+	o.conn.lock.Lock()
+	defer o.conn.lock.Unlock()
+	{{- range $arg := $req.Args }}
+		{{- if eq $arg.Type "new_id" }}
+		{{ $arg.Name.Local }} := o.conn.newId()
+		{{- end }}
+	{{- end }}
+	{{- range $arg := $req.Args }}
+		hdr.Size += typeWrapper_{{ $arg.Type }}({{ $arg.Name.Local }}).Size()
+	{{- end }}
+	buf := bytes.NewBuffer(make([]byte, 0, hdr.Size + 8))
+	hdr.WriteTo(buf)
+	{{- range $arg := $req.Args }}
+		typeWrapper_{{ $arg.Type }}({{ $arg.Name.Local }}).WriteTo(buf)
+	{{- end }}
+	_, err = c.conn.Write(buf.Bytes())
+	return err
 }
 {{ end -}}
