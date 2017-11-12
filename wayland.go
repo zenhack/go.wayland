@@ -3,9 +3,11 @@ package wayland
 //go:generate go run internal/gen/main.go
 
 import (
+	"fmt"
 	"golang.org/x/sys/unix"
 	"io"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -36,11 +38,62 @@ func (h Header) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
+func (h *Header) ReadFrom(r io.Reader) (int64, error) {
+	var buf [8]byte
+	n, err := io.ReadFull(r, buf[:])
+	if err != nil {
+		return int64(n), err
+	}
+	opcodeAndSize := hostEndian.Uint32(buf[4:])
+	*h = Header{
+		Sender: ObjectId(hostEndian.Uint32(buf[:4])),
+		Opcode: uint16(opcodeAndSize),
+		Size:   uint16(opcodeAndSize >> 16),
+	}
+	return int64(n), nil
+}
+
+func ReadMessage(conn *Conn) (Header, []byte, error) {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	header := Header{}
+	_, err := (&header).ReadFrom(conn.socket)
+	if err != nil {
+		return Header{}, nil, err
+	}
+	buf := make([]byte, header.Size)
+	_, err = io.ReadFull(conn.socket, buf)
+	return header, buf, err
+}
+
 type Conn struct {
 	lock   sync.Mutex
 	addr   *net.UnixAddr
 	socket *net.UnixConn
 	nextId uint32
+}
+
+func guessSocketPath() string {
+	return fmt.Sprintf("/var/run/user/%d/wayland-0", os.Getuid())
+}
+
+func Dial(path string) (*Conn, error) {
+	if path == "" {
+		path = guessSocketPath()
+	}
+	addr, err := net.ResolveUnixAddr("unix", path)
+	if err != nil {
+		return nil, err
+	}
+	uconn, err := net.DialUnix("unix", nil, addr)
+	if err != nil {
+		return nil, err
+	}
+	return &Conn{
+		addr:   addr,
+		socket: uconn,
+		nextId: 1,
+	}, nil
 }
 
 func (c *Conn) send(data []byte, fds []int) error {
