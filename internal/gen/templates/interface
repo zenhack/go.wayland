@@ -17,6 +17,20 @@ type {{ .Name.Exported }} interface {
 {{ end -}}
 }
 
+
+var {{ .Name.Local }}FdCounts = fdCounts {
+	requests: []int{
+	{{- range .Requests -}}
+		{{ .NumFdArgs }},
+	{{- end -}}
+	},
+	events: []int{
+	{{- range .Events -}}
+		{{ .NumFdArgs }},
+	{{- end -}}
+	},
+}
+
 type {{ .Name.Local }} remoteObject
 
 {{- range $req := .Requests }}

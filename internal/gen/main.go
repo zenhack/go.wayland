@@ -64,6 +64,19 @@ type Entry struct {
 // A wrapper for wayland basic types
 type WlType string
 
+func numFdArgs(args []Arg) int {
+	count := 0
+	for _, arg := range args {
+		if arg.Type == "fd" {
+			count++
+		}
+	}
+	return count
+}
+
+func (r *Request) NumFdArgs() int { return numFdArgs(r.Args) }
+func (e *Event) NumFdArgs() int   { return numFdArgs(e.Args) }
+
 func (t WlType) GoName() string {
 	switch t {
 	case "fd":

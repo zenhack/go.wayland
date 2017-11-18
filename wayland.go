@@ -30,6 +30,12 @@ type Header struct {
 	Size   uint16
 }
 
+// mapping from an interface's opcodes to the number of file descriptor
+// arguments for the corresponding request or event.
+type fdCounts struct {
+	requests, events []int
+}
+
 func (h Header) WriteTo(w io.Writer) (int64, error) {
 	var buf [8]byte
 	hostEndian.PutUint32(buf[:4], uint32(h.Sender))
