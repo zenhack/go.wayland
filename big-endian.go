@@ -1,4 +1,4 @@
-// +build ignore
+// +build ppc64be mipsbe mips64be
 
 package wayland
 
