@@ -1,18 +1,12 @@
-/* {{ .Description }} */
+{{ template "description" .Description }}
 type {{ .Name.Exported }} interface {
 	Object
-{{- range .Requests }}
-	/* {{ .Description }}
-
-	{{ template "paramdoc" .Args }}
-	*/
+{{ range .Requests }}
+	{{ template "docs" . -}}
 	{{ .Name.Exported }}({{ template "arglist" .Args }}) error
 {{ end -}}
 {{- range .Events }}
-	/* {{ .Description }}
-
-	{{ template "paramdoc" .Args }}
-	*/
+	{{ template "docs" . -}}
 	On{{ .Name.Exported }}(cb func({{ template "arglist" .Args }})) error
 {{ end -}}
 }

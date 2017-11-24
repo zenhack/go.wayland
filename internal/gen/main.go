@@ -16,6 +16,43 @@ var reservedWords = map[string]struct{}{
 	"struct":    {},
 }
 
+// A documentation string. We wrap string so we can define some helper
+// methods for the template's use.
+type Doc string
+
+// Return a slice of lines to be used as a Go documentation comment. The
+// lines should *not* have a leading //.
+func (d Doc) CommentLines() []string {
+	lines := strings.Split(string(d), "\n")
+	for i := range lines {
+		lines[i] = strings.Trim(lines[i], " \t") + "\n"
+	}
+
+	// Skip any leading blank lines:
+	i := 0
+	for ; i < len(lines) && lines[i] == "\n"; i++ {
+	}
+	lines = lines[i:]
+
+	// Trim off any trailing blank lines:
+	for i = len(lines) - 1; i >= 0 && lines[i] == "\n"; i-- {
+	}
+	lines = lines[:i+1]
+
+	for i := range lines {
+		lines[i] = replaceIdentifiers(lines[i])
+	}
+
+	return lines
+}
+
+// Change wayland-style identifiers in s (e.g. wl_foo_bar) to Go style
+// identifiers (e.g. FooBar):
+func replaceIdentifiers(s string) string {
+	// TODO: implement this.
+	return s
+}
+
 // Types for unmarshalling the xml file:
 
 type Protocol struct {
@@ -26,20 +63,20 @@ type Protocol struct {
 
 type Interface struct {
 	Name        WlName    `xml:"name,attr"`
-	Description string    `xml:"description"`
+	Description Doc       `xml:"description"`
 	Requests    []Request `xml:"request"`
 	Events      []Event   `xml:"event"`
 }
 
 type Request struct {
 	Name        WlName `xml:"name,attr"`
-	Description string `xml:"description"`
+	Description Doc    `xml:"description"`
 	Args        []Arg  `xml:"arg"`
 }
 
 type Event struct {
 	Name        WlName `xml:"name,attr"`
-	Description string `xml:"description"`
+	Description Doc    `xml:"description"`
 	Args        []Arg  `xml:"arg"`
 }
 
@@ -51,7 +88,7 @@ type Arg struct {
 }
 
 type Enum struct {
-	Description string  `xml:"description"`
+	Description Doc     `xml:"description"`
 	Entries     []Entry `xml:"entry"`
 }
 

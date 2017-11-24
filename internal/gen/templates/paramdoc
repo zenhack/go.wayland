@@ -1,7 +1,7 @@
-{{ if . }}
-Parameters:
-
-{{ range . -}}
-{{ .Name.Local }} - {{ .Summary }}
-{{ end -}}
-{{ end }}
+{{- if . -}}
+//
+// Parameters:
+// {{ range . }}
+//     {{ .Name.Local }} - {{ .Summary }}
+{{- end -}}
+{{- end -}}
