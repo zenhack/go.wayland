@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
-	"unicode"
 )
 
 var reservedWords = map[string]struct{}{
@@ -49,8 +48,16 @@ func (d Doc) CommentLines() []string {
 // Change wayland-style identifiers in s (e.g. wl_foo_bar) to Go style
 // identifiers (e.g. FooBar):
 func replaceIdentifiers(s string) string {
-	// TODO: implement this.
-	return s
+	words := strings.Split(s, " ")
+	for i, v := range words {
+		if strings.Index(v, "_") == -1 {
+			// Not an identifier
+			continue
+		}
+
+		words[i] = WlName(v).Exported()
+	}
+	return strings.Join(words, " ")
 }
 
 // Types for unmarshalling the xml file:
@@ -146,17 +153,10 @@ func (n WlName) parts() []string {
 	return ret
 }
 
-// capitalize the first letter of each string in the slice.
-// The elements must be ascii.
+// Convert each element in parts to title case.
 func titleCase(parts []string) {
-	for i := range parts {
-		word := []byte(parts[i])
-		if len(word) == 0 {
-			continue
-		}
-		// Everything is ascii, so we can assume each rune is one byte:
-		word[0] = byte(unicode.ToUpper(rune(word[0])))
-		parts[i] = string(word)
+	for i, part := range parts {
+		parts[i] = strings.Title(part)
 	}
 }
 
