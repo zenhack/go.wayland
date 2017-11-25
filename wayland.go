@@ -74,7 +74,6 @@ func ReadMessage(conn *Conn) (Header, []byte, error) {
 
 type Conn struct {
 	lock   sync.Mutex
-	addr   *net.UnixAddr
 	socket *net.UnixConn
 	nextId uint32
 }
@@ -96,15 +95,64 @@ func Dial(path string) (*Conn, error) {
 		return nil, err
 	}
 	return &Conn{
-		addr:   addr,
 		socket: uconn,
 		nextId: 1,
 	}, nil
 }
 
 func (c *Conn) send(data []byte, fds []int) error {
-	_, _, err := c.socket.WriteMsgUnix(data, unix.UnixRights(fds...), c.addr)
+	_, _, err := c.socket.WriteMsgUnix(data, unix.UnixRights(fds...), nil)
 	return err
+}
+
+func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
+	oob := make([]byte, unix.CmsgSpace(len(fds)*4))
+	n, oobn, _, _, errRead := c.socket.ReadMsgUnix(data, oob)
+
+	// Keep going, even if errRead != nil. This is designed to deal with the
+	// situation where we've gotten a short read, receiving some file descriptors
+	// in spite of the error.  We should close the fds in this case, to avoid
+	// leaking them. We rely on ReadMsgUnix to correctly report the lengths,
+	// so if there is a short read that results in an invalid message, it won't
+	// parse.
+	//
+	// TODO: I(zenhack) am not sure the above can actually happen; it would
+	// be nice to investigate and, if safe, simplify this.
+	firstErr := func(e1, e2 error) error {
+		if e1 != nil {
+			return e1
+		}
+		return e2
+	}
+
+	cmsgs, errParse := unix.ParseSocketControlMessage(oob[:oobn])
+	if errParse != nil {
+		return n, 0, firstErr(errRead, errParse)
+	}
+
+	fdsRecv := []int{}
+	closeAll := func() {
+		for _, fd := range fdsRecv {
+			unix.Close(fd)
+		}
+	}
+	for _, cmsg := range cmsgs {
+		msgFds, errParse := unix.ParseUnixRights(&cmsg)
+		if errParse != nil {
+			closeAll()
+			return n, 0, firstErr(errRead, errParse)
+		}
+		fdsRecv = append(fdsRecv, msgFds...)
+	}
+	fdn = len(fdsRecv)
+	if len(fdsRecv) > len(fds) {
+		// This should never happen; we allocated a buffer that was
+		// suposed to be the right size for len(fds) file descriptors,
+		// and no more.
+		panic("impossible")
+	}
+	copy(fds[:fdn], fdsRecv)
+	return n, fdn, nil
 }
 
 func (c *Conn) newId() uint32 {
