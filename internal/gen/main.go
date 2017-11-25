@@ -24,34 +24,48 @@ type Doc string
 func (d Doc) CommentLines() []string {
 	lines := strings.Split(string(d), "\n")
 	for i := range lines {
-		lines[i] = strings.Trim(lines[i], " \t") + "\n"
+		lines[i] = strings.Trim(lines[i], " \t")
 	}
 
 	// Skip any leading blank lines:
 	i := 0
-	for ; i < len(lines) && lines[i] == "\n"; i++ {
+	for ; i < len(lines) && lines[i] == ""; i++ {
 	}
 	lines = lines[i:]
 
 	// Trim off any trailing blank lines:
-	for i = len(lines) - 1; i >= 0 && lines[i] == "\n"; i-- {
+	for i = len(lines) - 1; i >= 0 && lines[i] == ""; i-- {
 	}
 	lines = lines[:i+1]
 
 	for i := range lines {
-		lines[i] = replaceIdentifiers(lines[i])
+		lines[i] = replaceIdentifiers(lines[i]) + "\n"
 	}
 
 	return lines
 }
 
-// Change wayland-style identifiers in s (e.g. wl_foo_bar) to Go style
-// identifiers (e.g. FooBar):
+// Make identifiers more idiomatic. In particular:
+//
+// * Change wayland-style identifiers in s (e.g. wl_foo_bar) to Go style
+//   identifiers (e.g. FooBar):
+// * Change NULL to nil
 func replaceIdentifiers(s string) string {
 	words := strings.Split(s, " ")
 	for i, v := range words {
+		if v == "NULL" {
+			words[i] = "nil"
+		}
+
 		if strings.Index(v, "_") == -1 {
 			// Not an identifier
+			continue
+		}
+
+		if strings.HasSuffix(v, ".h") || strings.HasSuffix(v, ".h.") {
+			// referencees a header file; don't change it. Note that
+			// this covers the case where the comment has a header
+			// name at the end of a sentence, like: my_header.h.
 			continue
 		}
 
