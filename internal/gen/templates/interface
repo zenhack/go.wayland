@@ -11,6 +11,32 @@ type {{ .Name.Exported }} interface {
 {{ end -}}
 }
 
+{{ range $enum := .Enums }}
+{{ template "description" $enum.Description -}}
+type {{ $.Name.Exported }}{{ $enum.Name.Exported }} uint32
+
+const (
+	{{ range $entry := $enum.Entries }}
+	// {{ $entry.Summary }}
+	{{ $.Name.Exported}}{{ $enum.Name.Exported }}{{ $entry.Name.Exported }} = {{ $entry.Value }}
+	{{ end }}
+)
+
+{{ if eq $enum.Name "error" }}
+{{/* Make it an instance of error, using the summary as the message. */}}
+func (e {{ $.Name.Exported }}Error) Error() string {
+	switch e {
+	{{- range $entry := $enum.Entries }}
+	case {{ $entry.Value }}:
+		return {{ $entry.Summary | printf "%q" }}
+	{{- end }}
+	default:
+		return "Unknown error code"
+	}
+}
+{{ end }}
+{{ end }}
+
 
 var {{ .Name.Local }}FdCounts = fdCounts {
 	requests: []int{

@@ -73,6 +73,7 @@ type Interface struct {
 	Description Doc       `xml:"description"`
 	Requests    []Request `xml:"request"`
 	Events      []Event   `xml:"event"`
+	Enums       []Enum    `xml:"enum"`
 }
 
 type Request struct {
@@ -95,13 +96,17 @@ type Arg struct {
 }
 
 type Enum struct {
+	Name        WlName  `xml:"name,attr"`
 	Description Doc     `xml:"description"`
+	Bitfield    bool    `xml:"bitfield,attr"`
 	Entries     []Entry `xml:"entry"`
 }
 
 type Entry struct {
-	Name    WlName `xml:"name,attr"`
-	Value   uint64 `xml:"value,attr"`
+	Name WlName `xml:"name,attr"`
+	// We unmarshal this as a string because xml/encoding expects integers
+	// to be decimal, while some of our values are hex:
+	Value   string `xml:"value,attr"`
 	Summary string `xml:"summary,attr"`
 }
 
