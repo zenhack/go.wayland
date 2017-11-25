@@ -1,2 +1,2 @@
 	{{ template "description" .Description -}}
-	{{- template "paramdoc" .Args -}}
+	{{- template "paramdoc" .Args }}
