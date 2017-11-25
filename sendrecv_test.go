@@ -31,10 +31,7 @@ func connFromFd(t *testing.T, fd int) *Conn {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn := &Conn{
-		socket: socket.(*net.UnixConn),
-	}
-	return conn
+	return newConn(1, socket.(*net.UnixConn))
 }
 
 // Child half of TestSendRecv. Accept a message and file descriptor on fd #3,

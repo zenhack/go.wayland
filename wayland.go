@@ -73,9 +73,19 @@ func ReadMessage(conn *Conn) (Header, []byte, error) {
 }
 
 type Conn struct {
-	lock   sync.Mutex
-	socket *net.UnixConn
-	nextId uint32
+	lock              sync.Mutex
+	socket            *net.UnixConn
+	nextId            uint32
+	myObjs, theirObjs map[uint32]*fdCounts
+}
+
+func newConn(firstId uint32, uconn *net.UnixConn) *Conn {
+	return &Conn{
+		socket:    uconn,
+		nextId:    firstId,
+		myObjs:    make(map[uint32]*fdCounts),
+		theirObjs: make(map[uint32]*fdCounts),
+	}
 }
 
 func guessSocketPath() string {
@@ -94,10 +104,7 @@ func Dial(path string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Conn{
-		socket: uconn,
-		nextId: 1,
-	}, nil
+	return newConn(1, uconn), nil
 }
 
 func (c *Conn) send(data []byte, fds []int) error {
