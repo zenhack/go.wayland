@@ -56,7 +56,7 @@ type {{ .Name.Local }} remoteObject
 {{- range $req := .Requests }}
 func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- template "arglist" $req.Args }}) (
-	{{- template "returnlist" $req.Args }} error) {
+	{{- template "returnlist" $req.Args -}} err error) {
 	o.conn.lock.Lock()
 	defer o.conn.lock.Unlock()
 	hdr := Header{
@@ -65,7 +65,7 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	}
 	{{- range $arg := $req.Args }}
 		{{- if eq $arg.Type "new_id" }}
-		{{ $arg.Name.Local }} := o.conn.newId()
+		{{ $arg.Name.Local }} = o.conn.newId()
 		{{- end }}
 	{{- end }}
 	{{- range $arg := $req.Args }}
@@ -81,6 +81,7 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 		write_{{ $arg.Type }}(buf, {{ $arg.Name.Local }})
 		{{- end -}}
 	{{- end }}
-	return o.conn.send(buf.Bytes(), fds)
+	err = o.conn.send(buf.Bytes(), fds)
+	return
 }
 {{ end -}}

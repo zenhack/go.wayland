@@ -1,0 +1,3 @@
+{{- range $arg := . -}}
+{{- if eq $arg.Type "new_id" }}{{ $arg.Name.Local }} ObjectId, {{ end -}}
+{{- end -}}

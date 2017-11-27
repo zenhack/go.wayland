@@ -162,10 +162,10 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	return n, fdn, nil
 }
 
-func (c *Conn) newId() uint32 {
+func (c *Conn) newId() ObjectId {
 	ret := c.nextId
 	c.nextId++
-	return ret
+	return ObjectId(ret)
 }
 
 type remoteObject struct {
