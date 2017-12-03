@@ -3,7 +3,7 @@ type {{ .Name.Exported }} interface {
 	Object
 {{ range .Requests }}
 	{{ template "docs" . -}}
-	{{ .Name.Exported }}({{ template "arglist" .Args }}) error
+	{{ .Name.Exported }}({{ template "arglist" .Args }}) ({{ template "returnlist" .Args }} err error)
 {{ end -}}
 {{- range .Events }}
 	{{ template "docs" . -}}
