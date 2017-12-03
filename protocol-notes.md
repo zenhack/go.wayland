@@ -14,4 +14,10 @@ interface, there is a sequence of opcodes starting from zero for that
 interface's requests, and another (also starting from zero) for that
 interface's events.
 
+# Display global
+
+Afaik, the docs don't actually say how the "global" display object gets
+identified. From reading the source, it appears it is object ID 0 on
+connection.
+
 [1]: https://wayland.freedesktop.org/docs/html/ch04.html

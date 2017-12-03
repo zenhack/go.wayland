@@ -84,7 +84,7 @@ func newConn(firstId uint32, uconn *net.UnixConn) *Conn {
 		socket:    uconn,
 		nextId:    firstId,
 		myObjs:    make(map[uint32]*fdCounts),
-		theirObjs: make(map[uint32]*fdCounts),
+		theirObjs: map[uint32]*fdCounts{0: &displayFdCounts},
 	}
 }
 
@@ -105,6 +105,13 @@ func Dial(path string) (*Conn, error) {
 		return nil, err
 	}
 	return newConn(1, uconn), nil
+}
+
+func (c *Conn) GetDisplay() Display {
+	return &display{
+		id:   0,
+		conn: c,
+	}
 }
 
 func (c *Conn) send(data []byte, fds []int) error {
