@@ -53,6 +53,10 @@ var {{ .Name.Local }}FdCounts = fdCounts {
 
 type {{ .Name.Local }} remoteObject
 
+func (o *{{ .Name.Local }}) Id() ObjectId {
+	return (*remoteObject)(o).Id()
+}
+
 {{- range $req := .Requests }}
 func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- template "arglist" $req.Args }}) (

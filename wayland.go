@@ -179,3 +179,7 @@ type remoteObject struct {
 	id   ObjectId
 	conn *Conn
 }
+
+func (o *remoteObject) Id() ObjectId {
+	return o.id
+}
