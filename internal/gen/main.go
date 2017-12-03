@@ -10,6 +10,8 @@ import (
 	"text/template"
 )
 
+var tpls = template.Must(template.ParseGlob("./internal/gen/templates/*"))
+
 var reservedWords = map[string]struct{}{
 	"interface": {},
 	"struct":    {},
@@ -205,16 +207,20 @@ func chkfatal(err error) {
 	}
 }
 
+func generate(filename string, tplName string, value interface{}) {
+	file, err := os.Create(filename)
+	chkfatal(err)
+	defer file.Close()
+	chkfatal(tpls.ExecuteTemplate(file, tplName, value))
+	chkfatal(exec.Command("gofmt", "-s", "-w", filename).Run())
+}
+
 func main() {
-	tpls := template.Must(template.ParseGlob("./internal/gen/templates/*"))
 	proto := Protocol{}
 	buf, err := ioutil.ReadFile("wayland.xml")
 	chkfatal(err)
 	err = xml.Unmarshal(buf, &proto)
 	chkfatal(err)
-	file, err := os.Create("gen.go")
-	chkfatal(err)
-	defer file.Close()
-	chkfatal(tpls.ExecuteTemplate(file, "protocol", proto))
-	chkfatal(exec.Command("gofmt", "-s", "-w", "gen.go").Run())
+	generate("gen.go", "protocol", proto)
+	generate("gen_test.go", "tests", proto.Interfaces)
 }
