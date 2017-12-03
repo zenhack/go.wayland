@@ -63,19 +63,6 @@ func (h *Header) ReadFrom(r io.Reader) (int64, error) {
 	return int64(n), nil
 }
 
-func ReadMessage(conn *Conn) (Header, []byte, error) {
-	conn.lock.Lock()
-	defer conn.lock.Unlock()
-	header := Header{}
-	_, err := (&header).ReadFrom(conn.socket)
-	if err != nil {
-		return Header{}, nil, err
-	}
-	buf := make([]byte, header.Size)
-	_, err = io.ReadFull(conn.socket, buf)
-	return header, buf, err
-}
-
 type Conn struct {
 	lock              sync.Mutex
 	socket            *net.UnixConn
