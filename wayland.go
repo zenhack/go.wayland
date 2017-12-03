@@ -20,6 +20,10 @@ type Fixed struct {
 
 type ObjectId uint32
 
+func (o ObjectId) Id() ObjectId {
+	return o
+}
+
 type Object interface {
 	Id() ObjectId
 }

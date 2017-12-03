@@ -70,7 +70,12 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	}
 	{{- range $arg := $req.Args }}
 		{{- if eq $arg.Type "new_id" }}
-		{{ $arg.Name.Local }} = o.conn.newId()
+		{{ $arg.Name.Local }} = &{{ $arg.Interface.Local }}{
+			remoteObject: remoteObject {
+				conn: o.conn,
+				id: o.conn.newId(),
+			},
+		}
 		{{- end }}
 	{{- end }}
 	{{- range $arg := $req.Args }}
