@@ -64,7 +64,7 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- template "returnlist" $req.Args -}} err error) {
 	o.conn.lock.Lock()
 	defer o.conn.lock.Unlock()
-	hdr := Header{
+	hdr := header{
 		Sender: o.id,
 		Size: 8,
 	}

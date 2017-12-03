@@ -28,7 +28,7 @@ type Object interface {
 	Id() ObjectId
 }
 
-type Header struct {
+type header struct {
 	Sender ObjectId
 	Opcode uint16
 	Size   uint16
@@ -40,7 +40,7 @@ type fdCounts struct {
 	requests, events []int
 }
 
-func (h Header) WriteTo(w io.Writer) (int64, error) {
+func (h header) WriteTo(w io.Writer) (int64, error) {
 	var buf [8]byte
 	hostEndian.PutUint32(buf[:4], uint32(h.Sender))
 	hostEndian.PutUint32(buf[4:], uint32(h.Size)<<16|uint32(h.Opcode))
@@ -48,14 +48,14 @@ func (h Header) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-func (h *Header) ReadFrom(r io.Reader) (int64, error) {
+func (h *header) ReadFrom(r io.Reader) (int64, error) {
 	var buf [8]byte
 	n, err := io.ReadFull(r, buf[:])
 	if err != nil {
 		return int64(n), err
 	}
 	opcodeAndSize := hostEndian.Uint32(buf[4:])
-	*h = Header{
+	*h = header{
 		Sender: ObjectId(hostEndian.Uint32(buf[:4])),
 		Opcode: uint16(opcodeAndSize),
 		Size:   uint16(opcodeAndSize >> 16),
