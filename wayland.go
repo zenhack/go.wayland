@@ -112,7 +112,7 @@ func Dial(path string) (*Conn, error) {
 }
 
 func (c *Conn) GetDisplay() Display {
-	return &display{
+	return &remoteDisplay{
 		remoteObject: remoteObject{
 			id:   0,
 			conn: c,

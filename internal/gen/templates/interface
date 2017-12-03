@@ -51,7 +51,7 @@ var {{ .Name.Local }}FdCounts = fdCounts {
 	},
 }
 
-type {{ .Name.Local }} struct {
+type remote{{ .Name.Exported }} struct {
 	remoteObject
 	{{- range .Events }}
 	on{{ .Name.Exported }} func({{ template "arglist" .Args }})
@@ -59,7 +59,7 @@ type {{ .Name.Local }} struct {
 }
 
 {{- range $req := .Requests }}
-func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
+func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- template "arglist" $req.Args }}) (
 	{{- template "returnlist" $req.Args -}} err error) {
 	o.conn.lock.Lock()
@@ -73,7 +73,7 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 		{{- if eq $arg.Interface "" }}
 		{{ $arg.Name.Local }} = o.conn.newId()
 		{{- else }}
-		{{ $arg.Name.Local }} = &{{ $arg.Interface.Local }}{
+		{{ $arg.Name.Local }} = &remote{{ $arg.Interface.Exported }}{
 			remoteObject: remoteObject {
 				conn: o.conn,
 				id: o.conn.newId(),
@@ -101,7 +101,7 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 {{ end -}}
 
 {{- range $i, $ev := .Events }}
-func (o *{{ $.Name.Local }}) On{{ $ev.Name.Exported }}(cb func({{ template "arglist" $ev.Args }})) {
+func (o *remote{{ $.Name.Exported }}) On{{ $ev.Name.Exported }}(cb func({{ template "arglist" $ev.Args }})) {
 	o.on{{ $ev.Name.Exported }} = cb
 }
 {{ end -}}

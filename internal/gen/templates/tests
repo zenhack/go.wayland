@@ -4,6 +4,6 @@ package wayland
 // make sure we're implementing interfaces correctly.
 var (
 	{{ range . }}
-	testInterface{{ .Name.Local }} {{ .Name.Exported }} = &{{ .Name.Local }}{}
+	testInterface{{ .Name.Local }} {{ .Name.Exported }} = &remote{{ .Name.Exported }}{}
 	{{ end }}
 )
