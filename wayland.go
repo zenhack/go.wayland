@@ -64,18 +64,17 @@ func (h *header) ReadFrom(r io.Reader) (int64, error) {
 }
 
 type Conn struct {
-	lock              sync.Mutex
-	socket            *net.UnixConn
-	nextId            uint32
-	myObjs, theirObjs map[uint32]*fdCounts
+	lock    sync.Mutex
+	socket  *net.UnixConn
+	nextId  uint32
+	objects map[uint32]*fdCounts
 }
 
 func newConn(firstId uint32, uconn *net.UnixConn) *Conn {
 	return &Conn{
-		socket:    uconn,
-		nextId:    firstId,
-		myObjs:    make(map[uint32]*fdCounts),
-		theirObjs: map[uint32]*fdCounts{0: &displayFdCounts},
+		socket:  uconn,
+		nextId:  firstId,
+		objects: map[uint32]*fdCounts{0: &displayFdCounts},
 	}
 }
 
