@@ -7,7 +7,7 @@ type {{ .Name.Exported }} interface {
 {{ end -}}
 {{- range .Events }}
 	{{ template "docs" . -}}
-	On{{ .Name.Exported }}(cb func({{ template "arglist" .Args }})) error
+	On{{ .Name.Exported }}(cb func({{ template "arglist" .Args }}))
 {{ end -}}
 }
 
@@ -51,10 +51,11 @@ var {{ .Name.Local }}FdCounts = fdCounts {
 	},
 }
 
-type {{ .Name.Local }} remoteObject
-
-func (o *{{ .Name.Local }}) Id() ObjectId {
-	return (*remoteObject)(o).Id()
+type {{ .Name.Local }} struct {
+	remoteObject
+	{{- range .Events }}
+	on{{ .Name.Exported }} func({{ template "arglist" .Args }})
+	{{- end -}}
 }
 
 {{- range $req := .Requests }}
@@ -87,5 +88,11 @@ func (o *{{ $.Name.Local }}) {{ $req.Name.Exported }}(
 	{{- end }}
 	err = o.conn.send(buf.Bytes(), fds)
 	return
+}
+{{ end -}}
+
+{{- range $i, $ev := .Events }}
+func (o *{{ $.Name.Local }}) On{{ $ev.Name.Exported }}(cb func({{ template "arglist" $ev.Args }})) {
+	o.on{{ $ev.Name.Exported }} = cb
 }
 {{ end -}}
