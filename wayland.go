@@ -11,6 +11,14 @@ import (
 	"sync"
 )
 
+// A side of the connection (server or client).
+type side int
+
+const (
+	clientSide side = iota
+	serverSide
+)
+
 // Signed 24.8 decimal numbers. It is a signed decimal type which
 // offers a sign bit, 23 bits of integer precision and 8 bits of
 // decimal precision.
@@ -68,14 +76,24 @@ type Conn struct {
 	socket  *net.UnixConn
 	nextId  uint32
 	objects map[uint32]*fdCounts
+	side    side
 }
 
-func newConn(firstId uint32, uconn *net.UnixConn) *Conn {
-	return &Conn{
+func newConn(side side, uconn *net.UnixConn) *Conn {
+	ret := &Conn{
+		side:    side,
 		socket:  uconn,
-		nextId:  firstId,
 		objects: map[uint32]*fdCounts{0: &displayFdCounts},
 	}
+	switch side {
+	case clientSide:
+		ret.nextId = 1
+	case serverSide:
+		ret.nextId = 0xff000000
+	default:
+		panic("Invalid connection side!")
+	}
+	return ret
 }
 
 func guessSocketPath() string {
@@ -94,7 +112,7 @@ func Dial(path string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newConn(1, uconn), nil
+	return newConn(clientSide, uconn), nil
 }
 
 func (c *Conn) GetDisplay() Display {
