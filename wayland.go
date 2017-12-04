@@ -106,11 +106,16 @@ func (c *Conn) GetDisplay() Display {
 	}
 }
 
+// Send the data and file descriptors over the connection's socket. len(data)
+// must not be 0.
 func (c *Conn) send(data []byte, fds []int) error {
 	_, _, err := c.socket.WriteMsgUnix(data, unix.UnixRights(fds...), nil)
 	return err
 }
 
+// Read data and file descriptors from the connection. `n` indicates the number
+// of bytes that were read, and `fdn` indicates the number of file descriptors
+// that were read.
 func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	oob := make([]byte, unix.CmsgSpace(len(fds)*4))
 	n, oobn, _, _, errRead := c.socket.ReadMsgUnix(data, oob)
@@ -161,12 +166,14 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	return n, fdn, nil
 }
 
+// Allocate and return a fresh object id.
 func (c *Conn) newId() ObjectId {
 	ret := c.nextId
 	c.nextId++
 	return ObjectId(ret)
 }
 
+// An object hosted on the other side of a connection.
 type remoteObject struct {
 	id   ObjectId
 	conn *Conn
