@@ -14,6 +14,8 @@ import (
 // A side of the connection (server or client).
 type side int
 
+const minServerId = 0xff000000
+
 const (
 	clientSide side = iota
 	serverSide
@@ -27,6 +29,14 @@ type Fixed struct {
 }
 
 type ObjectId uint32
+
+// Return which side of the connection the object lives in.
+func (o ObjectId) home() side {
+	if o >= 1 && o < minServerId {
+		return clientSide
+	}
+	return serverSide
+}
 
 func (o ObjectId) Id() ObjectId {
 	return o
@@ -75,7 +85,7 @@ type Conn struct {
 	lock    sync.Mutex
 	socket  *net.UnixConn
 	nextId  uint32
-	objects map[uint32]*fdCounts
+	objects map[ObjectId]*fdCounts
 	side    side
 }
 
@@ -83,13 +93,13 @@ func newConn(side side, uconn *net.UnixConn) *Conn {
 	ret := &Conn{
 		side:    side,
 		socket:  uconn,
-		objects: map[uint32]*fdCounts{0: &displayFdCounts},
+		objects: map[ObjectId]*fdCounts{0: &displayFdCounts},
 	}
 	switch side {
 	case clientSide:
 		ret.nextId = 1
 	case serverSide:
-		ret.nextId = 0xff000000
+		ret.nextId = minServerId
 	default:
 		panic("Invalid connection side!")
 	}
@@ -131,6 +141,12 @@ func (c *Conn) send(data []byte, fds []int) error {
 	return err
 }
 
+func closeAll(fds []int) {
+	for _, fd := range fds {
+		unix.Close(fd)
+	}
+}
+
 // Read data and file descriptors from the connection. `n` indicates the number
 // of bytes that were read, and `fdn` indicates the number of file descriptors
 // that were read.
@@ -160,15 +176,10 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	}
 
 	fdsRecv := []int{}
-	closeAll := func() {
-		for _, fd := range fdsRecv {
-			unix.Close(fd)
-		}
-	}
 	for _, cmsg := range cmsgs {
 		msgFds, errParse := unix.ParseUnixRights(&cmsg)
 		if errParse != nil {
-			closeAll()
+			closeAll(fdsRecv)
 			return n, 0, firstErr(errRead, errParse)
 		}
 		fdsRecv = append(fdsRecv, msgFds...)
@@ -182,6 +193,49 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	}
 	copy(fds[:fdn], fdsRecv)
 	return n, fdn, nil
+}
+
+func (c *Conn) readMsg() (data []byte, fds []int, err error) {
+	if c.side == serverSide {
+		panic("TODO: handle server side.")
+	}
+	hdr := header{}
+	_, err = (&hdr).ReadFrom(c.socket)
+	if err != nil {
+		return
+	}
+	if hdr.Size < 8 {
+		err = fmt.Errorf("Received message's header specifies a "+
+			"size (%d) that is too small (minmum is 8)", hdr.Size)
+		return
+	}
+	sender, ok := c.objects[hdr.Sender]
+	if !ok {
+		err = fmt.Errorf("Unknown object id: %d\n", hdr.Sender)
+		return
+	}
+	if hdr.Sender.home() == serverSide {
+		if len(sender.events) <= int(hdr.Opcode) {
+			err = fmt.Errorf("Opcode %d for object %d is out of range",
+				hdr.Opcode, hdr.Sender)
+			return
+		}
+		fds = make([]int, sender.events[hdr.Opcode])
+	} else {
+		panic("TODO: figure out what to do on the client")
+	}
+	data = make([]byte, hdr.Size-8)
+	n, nfds, err := c.recv(data, fds)
+	if err != nil {
+		closeAll(fds[:nfds])
+		return
+	}
+	if n != len(data) || nfds != len(fds) {
+		// TODO: can we handle this gracefully? Do we need to?
+		closeAll(fds[:nfds])
+		err = fmt.Errorf("Short read")
+	}
+	return
 }
 
 // Allocate and return a fresh object id.
