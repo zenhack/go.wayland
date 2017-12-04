@@ -20,4 +20,17 @@ Afaik, the docs don't actually say how the "global" display object gets
 identified. From reading the source, it appears it is object ID 0 on
 connection.
 
+# Id allocation:
+
+<https://wayland.freedesktop.org/docs/html/ch04.html#sect-Protocol-Creating-Objects>
+Says that clients should use the range `[1, 0xfeffffff]`, while servers
+use `[0xff000000, 0xffffffff]`. 0 is supposedly reserved for null or
+absent objects. However, this conflicts with:
+
+* My reading of the way identifying the display object works, per above.
+* <https://wayland.freedesktop.org/docs/html/ch04.html#sect-Protocol-Wire-Format>,
+  which says that for `new_id`s, the server allocates ids below 0x10000.
+
+I've yet to figure out what the reality is.
+
 [1]: https://wayland.freedesktop.org/docs/html/ch04.html
