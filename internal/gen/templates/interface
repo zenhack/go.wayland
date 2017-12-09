@@ -41,12 +41,12 @@ func (e {{ $.Name.Exported }}Error) Error() string {
 var {{ .Name.Local }}FdCounts = fdCounts {
 	requests: []int{
 	{{- range .Requests -}}
-		{{ .NumFdArgs }},
+		{{ .Args.FdCount }},
 	{{- end -}}
 	},
 	events: []int{
 	{{- range .Events -}}
-		{{ .NumFdArgs }},
+		{{ .Args.FdCount }},
 	{{- end -}}
 	},
 }

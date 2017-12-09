@@ -95,13 +95,13 @@ type Interface struct {
 type Request struct {
 	Name        WlName `xml:"name,attr"`
 	Description Doc    `xml:"description"`
-	Args        []Arg  `xml:"arg"`
+	Args        Args   `xml:"arg"`
 }
 
 type Event struct {
 	Name        WlName `xml:"name,attr"`
 	Description Doc    `xml:"description"`
-	Args        []Arg  `xml:"arg"`
+	Args        Args   `xml:"arg"`
 }
 
 type Arg struct {
@@ -110,6 +110,9 @@ type Arg struct {
 	Summary   string `xml:"summary,attr"`
 	Interface WlName `xml:"interface,attr"`
 }
+
+// Wrapped so we can define methods on it.
+type Args []Arg
 
 type Enum struct {
 	Name        WlName  `xml:"name,attr"`
@@ -129,7 +132,7 @@ type Entry struct {
 // A wrapper for wayland basic types
 type WlType string
 
-func numFdArgs(args []Arg) int {
+func (args Args) FdCount() int {
 	count := 0
 	for _, arg := range args {
 		if arg.Type == "fd" {
@@ -138,9 +141,6 @@ func numFdArgs(args []Arg) int {
 	}
 	return count
 }
-
-func (r *Request) NumFdArgs() int { return numFdArgs(r.Args) }
-func (e *Event) NumFdArgs() int   { return numFdArgs(e.Args) }
 
 func (t WlType) GoName() string {
 	switch t {
