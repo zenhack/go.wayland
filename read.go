@@ -6,7 +6,7 @@ import (
 
 func readU32(offset *int, buf []byte) (uint32, error) {
 	if *offset+4 > len(buf) {
-		return io.ErrUnexpectedEOF
+		return 0, io.ErrUnexpectedEOF
 	}
 	ret := hostEndian.Uint32(buf[*offset : *offset+4])
 	*offset += 4
@@ -40,15 +40,16 @@ func read_object(offset *int, buf []byte) (Object, error) {
 // func read_fd
 
 func read_string(offset *int, buf []byte) (string, error) {
-	size, err := readU32(offset, buf)
+	size32, err := readU32(offset, buf)
 	if err != nil {
 		return "", err
 	}
+	size := int(size32)
 	if *offset+ceil32(size+1) > len(buf) {
-		return io.ErrUnexpectedEOF
+		return "", io.ErrUnexpectedEOF
 	}
 	if buf[*offset+size] != 0 {
-		return ErrMissingNul
+		return "", ErrMissingNul
 	}
-	return buf[*offset : size-1]
+	return string(buf[*offset : size-1]), nil
 }
