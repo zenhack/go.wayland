@@ -27,12 +27,12 @@ func read_uint(offset *int, buf []byte) (uint32, error) {
 	return readU32(offset, buf)
 }
 
-func read_Fixed(offset *int, buf []byte) (Fixed, error) {
+func read_fixed(offset *int, buf []byte) (Fixed, error) {
 	ret, err := readU32(offset, buf)
 	return Fixed{value: ret}, err
 }
 
-func read_object(offset *int, buf []byte) (Object, error) {
+func read_object(offset *int, buf []byte) (ObjectId, error) {
 	ret, err := readU32(offset, buf)
 	return ObjectId(ret), err
 }

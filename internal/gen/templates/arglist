@@ -1,7 +1,5 @@
 {{ range . -}}
-	{{- if eq .Type "object" -}}
-		{{ .Name.Local }} {{ .Interface.Exported }},
-	{{- else if ne .Type "new_id" -}}
-		{{ .Name.Local }} {{ .Type.GoName }},
+	{{- if ne .Type "new_id" -}}
+		{{ .Name.Local }} {{ .GoType }},
 	{{- end -}}
 {{  end -}}

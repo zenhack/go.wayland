@@ -111,6 +111,13 @@ type Arg struct {
 	Interface WlName `xml:"interface,attr"`
 }
 
+func (a *Arg) GoType() string {
+	if a.Type == "object" && a.Interface != "" {
+		return a.Interface.Exported()
+	}
+	return a.Type.GoName()
+}
+
 // Wrapped so we can define methods on it.
 type Args []Arg
 

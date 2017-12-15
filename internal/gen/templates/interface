@@ -109,3 +109,42 @@ func (o *remote{{ $.Name.Exported }}) On{{ $ev.Name.Exported }}(cb func({{ templ
 	o.on{{ $ev.Name.Exported }} = cb
 }
 {{ end -}}
+
+func (o *remote{{ .Name.Exported}}) handleEvent(opcode uint16, buf []byte, fds []int) {
+	switch opcode {
+	{{ range $i, $ev := .Events -}}
+	case {{ $i }}:
+		if o.on{{ $ev.Name.Exported }} == nil {
+			closeAll(fds)
+			return
+		}
+		i := 0
+		nfd := 0
+		{{ range $arg := $ev.Args -}}
+			{{ if eq $arg.Type "fd" -}}
+				{{ $arg.Name.Local }} := fds[nfd]
+				nfd++
+			{{ else -}}
+				{{ $arg.Name.Local }}, err := read_{{ $arg.Type }}(&i, buf)
+				if err != nil {
+					closeAll(fds)
+					return
+				}
+			{{ end -}}
+		{{ end -}}
+		o.on{{ $ev.Name.Exported }}({{ range $arg := $ev.Args -}}
+			{{ if and (eq $arg.Type "object") (ne $arg.Interface "") }}
+				&remote{{ $arg.GoType }} {
+					remoteObject: remoteObject {
+						id: {{ $arg.Name.Local }},
+						conn: o.conn,
+					},
+				},
+			{{- else }}
+			{{ $arg.Name.Local }},
+			{{- end }}
+		{{- end }}
+		)
+	{{ end }}
+	}
+}
