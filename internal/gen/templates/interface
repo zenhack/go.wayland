@@ -64,10 +64,6 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- template "returnlist" $req.Args -}} err error) {
 	o.conn.lock.Lock()
 	defer o.conn.lock.Unlock()
-	hdr := header{
-		Sender: o.id,
-		Size: 8,
-	}
 	{{- range $arg := $req.Args }}
 		{{- if eq $arg.Type "new_id" }}
 		{{- if eq $arg.Interface "" }}
@@ -82,11 +78,12 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 		{{- end }}
 		{{- end }}
 	{{- end }}
-	{{- range $arg := $req.Args }}
-		hdr.Size += sizeOf_{{ $arg.Type }}({{ $arg.Name.Local }})
-	{{- end }}
-	buf := bytes.NewBuffer(make([]byte, 0, hdr.Size))
-	hdr.WriteTo(buf)
+	hdr := header{
+		Sender: o.id,
+		Size: 8 {{- range $arg := $req.Args -}}
+			+ sizeOf_{{ $arg.Type }}({{ $arg.Name.Local }})
+		{{- end }},
+	}
 	fds := []int{
 	{{- range $arg := $req.Args }}
 		{{- if eq $arg.Type "fd" -}}
@@ -94,6 +91,8 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 		{{- end -}}
 	{{- end -}}
 	}
+	buf := bytes.NewBuffer(make([]byte, 0, hdr.Size))
+	hdr.WriteTo(buf)
 	{{- range $arg := $req.Args }}
 		{{- if ne $arg.Type "fd" }}
 		write_{{ $arg.Type }}(buf, {{ $arg.Name.Local }})
