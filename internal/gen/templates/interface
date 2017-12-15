@@ -58,7 +58,7 @@ type remote{{ .Name.Exported }} struct {
 	{{- end -}}
 }
 
-{{- range $req := .Requests }}
+{{- range $i, $req := .Requests }}
 func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- template "arglist" $req.Args }}) (
 	{{- template "returnlist" $req.Args -}} err error) {
@@ -80,6 +80,7 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- end }}
 	hdr := header{
 		Sender: o.id,
+		Opcode: {{ $i }},
 		Size: 8 {{- range $arg := $req.Args -}}
 			+ sizeOf_{{ $arg.Type }}({{ $arg.Name.Local }})
 		{{- end }},
