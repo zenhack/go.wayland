@@ -13,6 +13,32 @@ func readU32(offset *int, buf []byte) (uint32, error) {
 	return ret, nil
 }
 
+func read_new_id(offset *int, buf []byte) (Object, error) {
+	ret, err := readU32(offset, buf)
+	return ObjectId(ret), err
+}
+
+func read_int(offset *int, buf []byte) (int32, error) {
+	ret, err := readU32(offset, buf)
+	return int32(ret), err
+}
+
+func read_uint(offset *int, buf []byte) (uint32, error) {
+	return readU32(offset, buf)
+}
+
+func read_Fixed(offset *int, buf []byte) (Fixed, error) {
+	ret, err := readU32(offset, buf)
+	return Fixed{value: ret}, err
+}
+
+func read_object(offset *int, buf []byte) (Object, error) {
+	ret, err := readU32(offset, buf)
+	return ObjectId(ret), err
+}
+
+// func read_fd
+
 func read_string(offset *int, buf []byte) (string, error) {
 	size, err := readU32(offset, buf)
 	if err != nil {
