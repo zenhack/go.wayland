@@ -13,7 +13,7 @@ func readU32(offset *int, buf []byte) (uint32, error) {
 	return ret, nil
 }
 
-func read_new_id(offset *int, buf []byte) (Object, error) {
+func read_new_id(offset *int, buf []byte) (ObjectId, error) {
 	ret, err := readU32(offset, buf)
 	return ObjectId(ret), err
 }

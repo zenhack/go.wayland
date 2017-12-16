@@ -3,11 +3,11 @@ type {{ .Name.Exported }} interface {
 	Object
 {{ range .Requests }}
 	{{ template "docs" . -}}
-	{{ .Name.Exported }}({{ template "arglist" .Args }}) ({{ template "returnlist" .Args }} err error)
+	{{ .Name.Exported }}({{ template "request_arglist" .Args }}) ({{ template "returnlist" .Args }} err error)
 {{ end -}}
 {{- range .Events }}
 	{{ template "docs" . -}}
-	On{{ .Name.Exported }}(cb func({{ template "arglist" .Args }}))
+	On{{ .Name.Exported }}(cb func({{ template "event_arglist" .Args }}))
 {{ end -}}
 }
 
@@ -54,13 +54,13 @@ var {{ .Name.Local }}FdCounts = fdCounts {
 type remote{{ .Name.Exported }} struct {
 	remoteObject
 	{{- range .Events }}
-	on{{ .Name.Exported }} func({{ template "arglist" .Args }})
+	on{{ .Name.Exported }} func({{ template "event_arglist" .Args }})
 	{{- end -}}
 }
 
 {{- range $i, $req := .Requests }}
 func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
-	{{- template "arglist" $req.Args }}) (
+	{{- template "request_arglist" $req.Args }}) (
 	{{- template "returnlist" $req.Args -}} err error) {
 	o.conn.lock.Lock()
 	defer o.conn.lock.Unlock()
@@ -105,7 +105,7 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 {{ end -}}
 
 {{- range $i, $ev := .Events }}
-func (o *remote{{ $.Name.Exported }}) On{{ $ev.Name.Exported }}(cb func({{ template "arglist" $ev.Args }})) {
+func (o *remote{{ $.Name.Exported }}) On{{ $ev.Name.Exported }}(cb func({{ template "event_arglist" $ev.Args }})) {
 	o.on{{ $ev.Name.Exported }} = cb
 }
 {{ end -}}
@@ -133,7 +133,7 @@ func (o *remote{{ .Name.Exported}}) handleEvent(opcode uint16, buf []byte, fds [
 			{{ end -}}
 		{{ end -}}
 		o.on{{ $ev.Name.Exported }}({{ range $arg := $ev.Args -}}
-			{{ if and (eq $arg.Type "object") (ne $arg.Interface "") }}
+			{{ if and (or (eq $arg.Type "new_id") (eq $arg.Type "object")) (ne $arg.Interface "") }}
 				&remote{{ $arg.GoType }} {
 					remoteObject: remoteObject {
 						id: {{ $arg.Name.Local }},

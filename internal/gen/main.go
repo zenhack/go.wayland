@@ -112,10 +112,14 @@ type Arg struct {
 }
 
 func (a *Arg) GoType() string {
-	if a.Type == "object" && a.Interface != "" {
+	switch {
+	case (a.Type == "object" || a.Type == "new_id") && a.Interface != "":
 		return a.Interface.Exported()
+	case a.Type == "new_id":
+		return "ObjectId"
+	default:
+		return a.Type.GoName()
 	}
-	return a.Type.GoName()
 }
 
 // Wrapped so we can define methods on it.
