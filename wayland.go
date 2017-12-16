@@ -254,3 +254,6 @@ type remoteObject struct {
 func (o *remoteObject) Id() ObjectId {
 	return o.id
 }
+
+// helper function to avoid errors about unused variables in generated code.
+func noOpInt(int) {}

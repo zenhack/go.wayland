@@ -120,6 +120,11 @@ func (o *remote{{ .Name.Exported}}) handleEvent(opcode uint16, buf []byte, fds [
 		}
 		i := 0
 		nfd := 0
+
+		// avoid an error if the variables aren't used:
+		noOpInt(i)
+		noOpInt(nfd)
+
 		{{ range $arg := $ev.Args -}}
 			{{ if eq $arg.Type "fd" -}}
 				{{ $arg.Name.Local }} := fds[nfd]
