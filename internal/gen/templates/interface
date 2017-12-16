@@ -58,6 +58,10 @@ type remote{{ .Name.Exported }} struct {
 	{{- end -}}
 }
 
+func (o *remote{{ .Name.Exported }}) getFdCounts() *fdCounts {
+	return &{{ .Name.Local }}FdCounts
+}
+
 {{- range $i, $req := .Requests }}
 func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 	{{- template "request_arglist" $req.Args }}) (

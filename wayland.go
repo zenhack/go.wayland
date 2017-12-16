@@ -85,16 +85,21 @@ type Conn struct {
 	lock    sync.Mutex
 	socket  *net.UnixConn
 	nextId  uint32
-	objects map[ObjectId]*fdCounts
+	objects map[ObjectId]remoteProxy
 	side    side
 }
 
 func newConn(side side, uconn *net.UnixConn) *Conn {
 	ret := &Conn{
-		side:    side,
-		socket:  uconn,
-		objects: map[ObjectId]*fdCounts{0: &displayFdCounts},
+		side:   side,
+		socket: uconn,
 	}
+	ret.objects = map[ObjectId]remoteProxy{0: &remoteDisplay{
+		remoteObject: remoteObject{
+			id:   0,
+			conn: ret,
+		},
+	}}
 	switch side {
 	case clientSide:
 		ret.nextId = 1
@@ -215,12 +220,13 @@ func (c *Conn) readMsg() (data []byte, fds []int, err error) {
 		return
 	}
 	if hdr.Sender.home() == serverSide {
-		if len(sender.events) <= int(hdr.Opcode) {
+		events := sender.getFdCounts().events
+		if len(events) <= int(hdr.Opcode) {
 			err = fmt.Errorf("Opcode %d for object %d is out of range",
 				hdr.Opcode, hdr.Sender)
 			return
 		}
-		fds = make([]int, sender.events[hdr.Opcode])
+		fds = make([]int, events[hdr.Opcode])
 	} else {
 		panic("TODO: figure out what to do on the client")
 	}
@@ -246,6 +252,8 @@ func (c *Conn) newId() ObjectId {
 }
 
 // An object hosted on the other side of a connection.
+//
+// TODO: pick better names/document the distinction between this and remoteProxy.
 type remoteObject struct {
 	id   ObjectId
 	conn *Conn
@@ -253,6 +261,11 @@ type remoteObject struct {
 
 func (o *remoteObject) Id() ObjectId {
 	return o.id
+}
+
+type remoteProxy interface {
+	getFdCounts() *fdCounts
+	handleEvent(opcode uint16, buf []byte, fds []int)
 }
 
 // helper function to avoid errors about unused variables in generated code.

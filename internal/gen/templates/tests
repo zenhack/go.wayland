@@ -3,7 +3,8 @@ package wayland
 // No actual tests in this file, but we do a number of assignments to
 // make sure we're implementing interfaces correctly.
 var (
-	{{ range . }}
-	testInterface{{ .Name.Local }} {{ .Name.Exported }} = &remote{{ .Name.Exported }}{}
-	{{ end }}
+	{{ range . -}}
+	_ = {{ .Name.Exported }}(&remote{{ .Name.Exported }}{})
+	_ = remoteProxy(&remote{{ .Name.Exported }}{})
+	{{ end -}}
 )
