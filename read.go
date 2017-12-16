@@ -37,8 +37,6 @@ func read_object(offset *int, buf []byte) (ObjectId, error) {
 	return ObjectId(ret), err
 }
 
-// func read_fd
-
 func read_string(offset *int, buf []byte) (string, error) {
 	size32, err := readU32(offset, buf)
 	if err != nil {
