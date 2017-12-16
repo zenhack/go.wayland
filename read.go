@@ -49,5 +49,23 @@ func read_string(offset *int, buf []byte) (string, error) {
 	if buf[*offset+size] != 0 {
 		return "", ErrMissingNul
 	}
-	return string(buf[*offset : size-1]), nil
+	ret := string(buf[*offset : size-1])
+	*offset += ceil32(size + 1)
+	return ret, nil
+}
+
+func read_array(offset *int, buf []byte) ([]byte, error) {
+	// TODO: this has too mch in common with read_string;
+	// factor some of it out.
+	size32, err := readU32(offset, buf)
+	if err != nil {
+		return nil, err
+	}
+	size := int(size32)
+	if *offset+ceil32(size) > len(buf) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	ret := buf[*offset:size]
+	*offset += ceil32(size)
+	return ret, err
 }
