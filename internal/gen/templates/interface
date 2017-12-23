@@ -73,12 +73,14 @@ func (o *remote{{ $.Name.Exported }}) {{ $req.Name.Exported }}(
 		{{- if eq $arg.Interface "" }}
 		{{ $arg.Name.Local }} = o.conn.newId()
 		{{- else }}
-		{{ $arg.Name.Local }} = &remote{{ $arg.Interface.Exported }}{
+		{{ $arg.Name.Local }}Proxy_ := &remote{{ $arg.Interface.Exported }}{
 			remoteObject: remoteObject {
 				conn: o.conn,
 				id: o.conn.newId(),
 			},
 		}
+		{{ $arg.Name.Local }} = {{ $arg.Name.Local }}Proxy_
+		o.conn.objects[{{ $arg.Name.Local }}Proxy_.id] = {{ $arg.Name.Local }}Proxy_
 		{{- end }}
 		{{- end }}
 	{{- end }}
