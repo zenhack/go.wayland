@@ -178,41 +178,47 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	return n, fdn, nil
 }
 
-func (c *Conn) readMsg() (data []byte, fds []int, err error) {
+func (c *Conn) nextMsg() error {
 	hdr := header{}
-	_, err = (&hdr).ReadFrom(c.socket)
+	_, err := (&hdr).ReadFrom(c.socket)
 	if err != nil {
-		return
+		return err
 	}
 	if hdr.Size < 8 {
-		err = fmt.Errorf("Received message's header specifies a "+
+		return fmt.Errorf("Received message's header specifies a "+
 			"size (%d) that is too small (minmum is 8)", hdr.Size)
-		return
 	}
 	sender, ok := c.objects[hdr.Sender]
 	if !ok {
-		err = fmt.Errorf("Unknown object id: %d\n", hdr.Sender)
-		return
+		return fmt.Errorf("Unknown object id: %d\n", hdr.Sender)
 	}
 	events := sender.getFdCounts().events
 	if len(events) <= int(hdr.Opcode) {
-		err = fmt.Errorf("Opcode %d for object %d is out of range",
+		return fmt.Errorf("Opcode %d for object %d is out of range",
 			hdr.Opcode, hdr.Sender)
-		return
 	}
-	fds = make([]int, events[hdr.Opcode])
-	data = make([]byte, hdr.Size-8)
+	fds := make([]int, events[hdr.Opcode])
+	data := make([]byte, hdr.Size-8)
 	n, nfds, err := c.recv(data, fds)
 	if err != nil {
 		closeAll(fds[:nfds])
-		return
+		return err
 	}
 	if n != len(data) || nfds != len(fds) {
 		// TODO: can we handle this gracefully? Do we need to?
 		closeAll(fds[:nfds])
-		err = fmt.Errorf("Short read")
+		return fmt.Errorf("Short read")
 	}
-	return
+	sender.handleEvent(hdr.Opcode, data, fds)
+	return nil
+}
+
+func (c *Conn) MainLoop() error {
+	err := c.nextMsg()
+	for err == nil {
+		err = c.nextMsg()
+	}
+	return err
 }
 
 // Allocate and return a fresh object id.
