@@ -16,11 +16,6 @@ type side int
 
 const minServerId = 0xff000000
 
-const (
-	clientSide side = iota
-	serverSide
-)
-
 // Signed 24.8 decimal numbers. It is a signed decimal type which
 // offers a sign bit, 23 bits of integer precision and 8 bits of
 // decimal precision.
@@ -29,14 +24,6 @@ type Fixed struct {
 }
 
 type ObjectId uint32
-
-// Return which side of the connection the object lives in.
-func (o ObjectId) home() side {
-	if o >= 1 && o < minServerId {
-		return clientSide
-	}
-	return serverSide
-}
 
 func (o ObjectId) Id() ObjectId {
 	return o
@@ -86,13 +73,12 @@ type Conn struct {
 	socket  *net.UnixConn
 	nextId  uint32
 	objects map[ObjectId]remoteProxy
-	side    side
 }
 
-func newConn(side side, uconn *net.UnixConn) *Conn {
+func newConn(uconn *net.UnixConn) *Conn {
 	ret := &Conn{
-		side:   side,
 		socket: uconn,
+		nextId: 1,
 	}
 	ret.objects = map[ObjectId]remoteProxy{0: &remoteDisplay{
 		remoteObject: remoteObject{
@@ -100,14 +86,6 @@ func newConn(side side, uconn *net.UnixConn) *Conn {
 			conn: ret,
 		},
 	}}
-	switch side {
-	case clientSide:
-		ret.nextId = 1
-	case serverSide:
-		ret.nextId = minServerId
-	default:
-		panic("Invalid connection side!")
-	}
 	return ret
 }
 
@@ -127,7 +105,7 @@ func Dial(path string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newConn(clientSide, uconn), nil
+	return newConn(uconn), nil
 }
 
 func (c *Conn) GetDisplay() Display {
@@ -201,9 +179,6 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 }
 
 func (c *Conn) readMsg() (data []byte, fds []int, err error) {
-	if c.side == serverSide {
-		panic("TODO: handle server side.")
-	}
 	hdr := header{}
 	_, err = (&hdr).ReadFrom(c.socket)
 	if err != nil {
@@ -219,17 +194,13 @@ func (c *Conn) readMsg() (data []byte, fds []int, err error) {
 		err = fmt.Errorf("Unknown object id: %d\n", hdr.Sender)
 		return
 	}
-	if hdr.Sender.home() == serverSide {
-		events := sender.getFdCounts().events
-		if len(events) <= int(hdr.Opcode) {
-			err = fmt.Errorf("Opcode %d for object %d is out of range",
-				hdr.Opcode, hdr.Sender)
-			return
-		}
-		fds = make([]int, events[hdr.Opcode])
-	} else {
-		panic("TODO: figure out what to do on the client")
+	events := sender.getFdCounts().events
+	if len(events) <= int(hdr.Opcode) {
+		err = fmt.Errorf("Opcode %d for object %d is out of range",
+			hdr.Opcode, hdr.Sender)
+		return
 	}
+	fds = make([]int, events[hdr.Opcode])
 	data = make([]byte, hdr.Size-8)
 	n, nfds, err := c.recv(data, fds)
 	if err != nil {
