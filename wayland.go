@@ -68,15 +68,15 @@ func (h *header) ReadFrom(r io.Reader) (int64, error) {
 	return int64(n), nil
 }
 
-type Conn struct {
+type Client struct {
 	lock    sync.Mutex
 	socket  *net.UnixConn
 	nextId  uint32
 	objects map[ObjectId]remoteProxy
 }
 
-func newConn(uconn *net.UnixConn) *Conn {
-	ret := &Conn{
+func newClient(uconn *net.UnixConn) *Client {
+	ret := &Client{
 		socket: uconn,
 		nextId: 2,
 	}
@@ -93,7 +93,7 @@ func guessSocketPath() string {
 	return fmt.Sprintf("/var/run/user/%d/wayland-0", os.Getuid())
 }
 
-func Dial(path string) (*Conn, error) {
+func Dial(path string) (*Client, error) {
 	if path == "" {
 		path = guessSocketPath()
 	}
@@ -105,10 +105,10 @@ func Dial(path string) (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newConn(uconn), nil
+	return newClient(uconn), nil
 }
 
-func (c *Conn) GetDisplay() Display {
+func (c *Client) GetDisplay() Display {
 	return &remoteDisplay{
 		remoteObject: remoteObject{
 			id:   1,
@@ -119,7 +119,7 @@ func (c *Conn) GetDisplay() Display {
 
 // Send the data and file descriptors over the connection's socket. len(data)
 // must not be 0.
-func (c *Conn) send(data []byte, fds []int) error {
+func (c *Client) send(data []byte, fds []int) error {
 	_, _, err := c.socket.WriteMsgUnix(data, unix.UnixRights(fds...), nil)
 	return err
 }
@@ -133,7 +133,7 @@ func closeAll(fds []int) {
 // Read data and file descriptors from the connection. `n` indicates the number
 // of bytes that were read, and `fdn` indicates the number of file descriptors
 // that were read.
-func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
+func (c *Client) recv(data []byte, fds []int) (n, fdn int, err error) {
 	oob := make([]byte, unix.CmsgSpace(len(fds)*4))
 	n, oobn, _, _, errRead := c.socket.ReadMsgUnix(data, oob)
 
@@ -178,7 +178,7 @@ func (c *Conn) recv(data []byte, fds []int) (n, fdn int, err error) {
 	return n, fdn, nil
 }
 
-func (c *Conn) nextMsg() error {
+func (c *Client) nextMsg() error {
 	hdr := header{}
 	_, err := (&hdr).ReadFrom(c.socket)
 	if err != nil {
@@ -213,7 +213,7 @@ func (c *Conn) nextMsg() error {
 	return nil
 }
 
-func (c *Conn) MainLoop() error {
+func (c *Client) MainLoop() error {
 	for {
 		if err := c.nextMsg(); err != nil {
 			return err
@@ -222,7 +222,7 @@ func (c *Conn) MainLoop() error {
 }
 
 // Allocate and return a fresh object id.
-func (c *Conn) newId() ObjectId {
+func (c *Client) newId() ObjectId {
 	ret := c.nextId
 	c.nextId++
 	return ObjectId(ret)
@@ -233,7 +233,7 @@ func (c *Conn) newId() ObjectId {
 // TODO: pick better names/document the distinction between this and remoteProxy.
 type remoteObject struct {
 	id   ObjectId
-	conn *Conn
+	conn *Client
 }
 
 func (o *remoteObject) Id() ObjectId {

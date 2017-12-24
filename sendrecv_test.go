@@ -26,12 +26,12 @@ func TestSendRecv(t *testing.T) {
 	}
 }
 
-func connFromFd(t *testing.T, fd int) *Conn {
+func connFromFd(t *testing.T, fd int) *Client {
 	socket, err := net.FileConn(os.NewFile(uintptr(fd), "socket"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newConn(socket.(*net.UnixConn))
+	return newClient(socket.(*net.UnixConn))
 }
 
 // Child half of TestSendRecv. Accept a message and file descriptor on fd #3,
