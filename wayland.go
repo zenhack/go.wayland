@@ -78,11 +78,11 @@ type Conn struct {
 func newConn(uconn *net.UnixConn) *Conn {
 	ret := &Conn{
 		socket: uconn,
-		nextId: 1,
+		nextId: 2,
 	}
-	ret.objects = map[ObjectId]remoteProxy{0: &remoteDisplay{
+	ret.objects = map[ObjectId]remoteProxy{1: &remoteDisplay{
 		remoteObject: remoteObject{
-			id:   0,
+			id:   1,
 			conn: ret,
 		},
 	}}
@@ -111,7 +111,7 @@ func Dial(path string) (*Conn, error) {
 func (c *Conn) GetDisplay() Display {
 	return &remoteDisplay{
 		remoteObject: remoteObject{
-			id:   0,
+			id:   1,
 			conn: c,
 		},
 	}
