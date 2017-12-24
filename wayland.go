@@ -214,11 +214,11 @@ func (c *Conn) nextMsg() error {
 }
 
 func (c *Conn) MainLoop() error {
-	err := c.nextMsg()
-	for err == nil {
-		err = c.nextMsg()
+	for {
+		if err := c.nextMsg(); err != nil {
+			return err
+		}
 	}
-	return err
 }
 
 // Allocate and return a fresh object id.
