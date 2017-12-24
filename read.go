@@ -49,7 +49,7 @@ func read_string(offset *int, buf []byte) (string, error) {
 	if buf[*offset+size] != 0 {
 		return "", ErrMissingNul
 	}
-	ret := string(buf[*offset : size-1])
+	ret := string(buf[*offset : *offset+size-1])
 	*offset += ceil32(size + 1)
 	return ret, nil
 }
