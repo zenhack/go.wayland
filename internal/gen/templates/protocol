@@ -14,3 +14,5 @@ import (
 {{ range .Interfaces }}
 {{ template "interface" . }}
 {{ end }}
+
+{{ template "interface_registry" . }}

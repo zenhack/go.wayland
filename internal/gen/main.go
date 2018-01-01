@@ -86,6 +86,7 @@ type Protocol struct {
 
 type Interface struct {
 	Name        WlName    `xml:"name,attr"`
+	Version     int       `xml:"version,attr"`
 	Description Doc       `xml:"description"`
 	Requests    []Request `xml:"request"`
 	Events      []Event   `xml:"event"`

@@ -1,0 +1,12 @@
+var interfaceRegistry = map[interfaceIdent]func(c *Client, id ObjectId) Object {
+{{ range .Interfaces }}
+	interfaceIdent{Name: {{ .Name | printf "%q" }}, Version: {{ .Version }} }: func(c *Client, id ObjectId) Object {
+		return &remote{{ .Name.Exported }}{
+			remoteObject: remoteObject{
+				conn: c,
+				id: id,
+			},
+		}
+	},
+{{ end }}
+}
