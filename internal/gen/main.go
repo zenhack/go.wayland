@@ -115,7 +115,7 @@ type Arg struct {
 func (a *Arg) GoType() string {
 	switch {
 	case (a.Type == "object" || a.Type == "new_id") && a.Interface != "":
-		return a.Interface.Exported()
+		return "*" + a.Interface.Exported()
 	case a.Type == "new_id":
 		return "ObjectId"
 	default:

@@ -2,7 +2,7 @@
 {{- if eq $arg.Type "new_id" -}}
 	{{- $arg.Name.Local -}}
 	{{- if eq $arg.Interface.Exported "" }} ObjectId,
-	{{- else }} {{ $arg.Interface.Exported }},
+	{{- else }} *{{ $arg.Interface.Exported }},
 	{{- end -}}
 {{- end -}}
 {{- end -}}

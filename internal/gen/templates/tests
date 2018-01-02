@@ -4,7 +4,7 @@ package wayland
 // make sure we're implementing interfaces correctly.
 var (
 	{{ range . -}}
-	_ = {{ .Name.Exported }}(&remote{{ .Name.Exported }}{})
-	_ = remoteProxy(&remote{{ .Name.Exported }}{})
+	_ = Object(&{{ .Name.Exported }}{})
+	_ = remoteProxy(&{{ .Name.Exported }}{})
 	{{ end -}}
 )

@@ -80,7 +80,7 @@ func newClient(uconn *net.UnixConn) *Client {
 		socket: uconn,
 		nextId: 2,
 	}
-	ret.objects = map[ObjectId]remoteProxy{1: &remoteDisplay{
+	ret.objects = map[ObjectId]remoteProxy{1: &Display{
 		remoteObject: remoteObject{
 			id:   1,
 			conn: ret,
@@ -108,8 +108,8 @@ func Dial(path string) (*Client, error) {
 	return newClient(uconn), nil
 }
 
-func (c *Client) GetDisplay() Display {
-	return &remoteDisplay{
+func (c *Client) GetDisplay() *Display {
+	return &Display{
 		remoteObject: remoteObject{
 			id:   1,
 			conn: c,
