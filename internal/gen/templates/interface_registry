@@ -1,6 +1,6 @@
-var interfaceRegistry = map[interfaceIdent]func(c *Client, id ObjectId) Object {
+var interfaceRegistry = map[interfaceIdent]func(c *Client, id ObjectId) remoteProxy {
 {{ range .Interfaces }}
-	interfaceIdent{Name: {{ .Name | printf "%q" }}, Version: {{ .Version }} }: func(c *Client, id ObjectId) Object {
+	interfaceIdent{Name: {{ .Name | printf "%q" }}, Version: {{ .Version }} }: func(c *Client, id ObjectId) remoteProxy{
 		return &{{ .Name.Exported }}{
 			remoteObject: remoteObject{
 				conn: c,

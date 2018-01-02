@@ -59,6 +59,16 @@ func (e *ServerError) Error() string {
 	)
 }
 
+type UnknownInterface struct {
+	id            ObjectId
+	InterfaceName string
+	Version       uint32
+}
+
+func (i *UnknownInterface) Id() ObjectId {
+	return i.id
+}
+
 func (h header) WriteTo(w io.Writer) (int64, error) {
 	var buf [8]byte
 	hostEndian.PutUint32(buf[:4], uint32(h.Sender))
@@ -88,7 +98,9 @@ type Client struct {
 	nextId  uint32
 	objects map[ObjectId]remoteProxy
 
-	display *Display
+	display  *Display
+	registry *Registry
+	onGlobal func(obj Object)
 
 	// An error received from the server's Display object. if this is set,
 	// the next iteration in MainLoop will exit, returning it.
@@ -144,6 +156,34 @@ func Dial(path string) (*Client, error) {
 		// TODO: we probably need to do some bookkeeping to coordinate
 		// with nextId().
 	})
+	client.registry, err = client.display.GetRegistry()
+	if err != nil {
+		uconn.Close()
+		return nil, err
+	}
+	client.registry.OnGlobal(func(name uint32, interface_ string, version uint32) {
+		if client.onGlobal == nil {
+			return
+		}
+		id := ObjectId(name)
+		ifaceFn, ok := interfaceRegistry[interfaceIdent{
+			Name:    interface_,
+			Version: version,
+		}]
+		if ok {
+			obj := ifaceFn(client, id)
+			// TODO: be defensive about adding this; check that it's in the server's
+			// allowed id range, isn't already present, etc.
+			client.objects[id] = obj
+			client.onGlobal(obj)
+		} else {
+			client.onGlobal(&UnknownInterface{
+				id:            id,
+				InterfaceName: interface_,
+				Version:       version,
+			})
+		}
+	})
 	return client, nil
 }
 
@@ -158,6 +198,10 @@ func (c *Client) Sync(fn func()) error {
 
 func (c *Client) GetDisplay() *Display {
 	return c.display
+}
+
+func (c *Client) GetRegistry() *Registry {
+	return c.registry
 }
 
 // Send the data and file descriptors over the connection's socket. len(data)
@@ -256,6 +300,10 @@ func (c *Client) nextMsg() error {
 	return nil
 }
 
+func (c *Client) OnGlobal(callback func(Object)) {
+	c.onGlobal = callback
+}
+
 func (c *Client) MainLoop() error {
 	for {
 		if err := c.nextMsg(); err != nil {
@@ -284,6 +332,7 @@ func (o *remoteObject) Id() ObjectId {
 }
 
 type remoteProxy interface {
+	Object
 	getFdCounts() *fdCounts
 	handleEvent(opcode uint16, buf []byte, fds []int)
 }

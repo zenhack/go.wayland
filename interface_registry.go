@@ -2,5 +2,5 @@ package wayland
 
 type interfaceIdent struct {
 	Name    string
-	Version int
+	Version uint32
 }
