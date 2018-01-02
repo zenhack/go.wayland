@@ -88,6 +88,8 @@ type Client struct {
 	nextId  uint32
 	objects map[ObjectId]remoteProxy
 
+	display *Display
+
 	// An error received from the server's Display object. if this is set,
 	// the next iteration in MainLoop will exit, returning it.
 	receivedError error
@@ -124,15 +126,20 @@ func Dial(path string) (*Client, error) {
 		return nil, err
 	}
 	client := newClient(uconn)
-	display := client.GetDisplay()
-	display.OnError(func(oid ObjectId, code uint32, message string) {
+	client.display = &Display{
+		remoteObject: remoteObject{
+			id:   1,
+			conn: client,
+		},
+	}
+	client.display.OnError(func(oid ObjectId, code uint32, message string) {
 		client.receivedError = &ServerError{
 			ObjectId:  oid,
 			ErrorCode: code,
 			Message:   message,
 		}
 	})
-	display.OnDeleteId(func(id uint32) {
+	client.display.OnDeleteId(func(id uint32) {
 		delete(client.objects, ObjectId(id))
 		// TODO: we probably need to do some bookkeeping to coordinate
 		// with nextId().
@@ -141,8 +148,7 @@ func Dial(path string) (*Client, error) {
 }
 
 func (c *Client) Sync(fn func()) error {
-	display := c.GetDisplay()
-	cb, err := display.Sync()
+	cb, err := c.display.Sync()
 	if err != nil {
 		return err
 	}
@@ -151,12 +157,7 @@ func (c *Client) Sync(fn func()) error {
 }
 
 func (c *Client) GetDisplay() *Display {
-	return &Display{
-		remoteObject: remoteObject{
-			id:   1,
-			conn: c,
-		},
-	}
+	return c.display
 }
 
 // Send the data and file descriptors over the connection's socket. len(data)
