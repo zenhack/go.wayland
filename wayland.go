@@ -45,6 +45,20 @@ type fdCounts struct {
 	requests, events []int
 }
 
+// An error returned by the server.
+type ServerError struct {
+	ObjectId  ObjectId
+	ErrorCode uint32
+	Message   string
+}
+
+func (e *ServerError) Error() string {
+	return fmt.Sprintf(
+		"Server error: %q (object id = %d, error code = %d)",
+		e.Message, e.ObjectId, e.ErrorCode,
+	)
+}
+
 func (h header) WriteTo(w io.Writer) (int64, error) {
 	var buf [8]byte
 	hostEndian.PutUint32(buf[:4], uint32(h.Sender))
@@ -73,6 +87,10 @@ type Client struct {
 	socket  *net.UnixConn
 	nextId  uint32
 	objects map[ObjectId]remoteProxy
+
+	// An error received from the server's Display object. if this is set,
+	// the next iteration in MainLoop will exit, returning it.
+	receivedError error
 }
 
 func newClient(uconn *net.UnixConn) *Client {
@@ -105,7 +123,31 @@ func Dial(path string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClient(uconn), nil
+	client := newClient(uconn)
+	display := client.GetDisplay()
+	display.OnError(func(oid ObjectId, code uint32, message string) {
+		client.receivedError = &ServerError{
+			ObjectId:  oid,
+			ErrorCode: code,
+			Message:   message,
+		}
+	})
+	display.OnDeleteId(func(id uint32) {
+		delete(client.objects, ObjectId(id))
+		// TODO: we probably need to do some bookkeeping to coordinate
+		// with nextId().
+	})
+	return client, nil
+}
+
+func (c *Client) Sync(fn func()) error {
+	display := c.GetDisplay()
+	cb, err := display.Sync()
+	if err != nil {
+		return err
+	}
+	cb.OnDone(func(uint32) { fn() })
+	return nil
 }
 
 func (c *Client) GetDisplay() *Display {
