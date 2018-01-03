@@ -46,6 +46,14 @@ type {{ .Name.Exported }} struct {
 	{{- end -}}
 }
 
+func (o *{{ .Name.Exported }}) Interface() string {
+	return {{ .Name | printf "%q" }}
+}
+
+func (o *{{ .Name.Exported }}) Version() uint32 {
+	return {{ .Version }}
+}
+
 func (o *{{ .Name.Exported }}) getFdCounts() *fdCounts {
 	return &{{ .Name.Local }}FdCounts
 }

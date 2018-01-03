@@ -31,6 +31,12 @@ func (o ObjectId) Id() ObjectId {
 
 type Object interface {
 	Id() ObjectId
+	Interface() string
+	Version() uint32
+}
+
+type hasObjectId interface {
+	Id() ObjectId
 }
 
 type header struct {
@@ -60,13 +66,21 @@ func (e *ServerError) Error() string {
 }
 
 type UnknownInterface struct {
-	id            ObjectId
-	InterfaceName string
-	Version       uint32
+	id         ObjectId
+	interface_ string
+	version    uint32
 }
 
 func (i *UnknownInterface) Id() ObjectId {
 	return i.id
+}
+
+func (i *UnknownInterface) Interface() string {
+	return i.interface_
+}
+
+func (i *UnknownInterface) Version() uint32 {
+	return i.version
 }
 
 func (h header) WriteTo(w io.Writer) (int64, error) {
@@ -174,13 +188,18 @@ func Dial(path string) (*Client, error) {
 			obj := ifaceFn(client, id)
 			// TODO: be defensive about adding this; check that it's in the server's
 			// allowed id range, isn't already present, etc.
-			client.objects[id] = obj
+
+			// FIXME: actually inserting this causes an error later; the IDs are
+			// colliding with the registry, so we then get an error about an
+			// out-of-range event number.
+
+			// client.objects[id] = obj
 			client.onGlobal(obj)
 		} else {
 			client.onGlobal(&UnknownInterface{
-				id:            id,
-				InterfaceName: interface_,
-				Version:       version,
+				id:         id,
+				interface_: interface_,
+				version:    version,
 			})
 		}
 	})

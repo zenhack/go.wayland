@@ -16,11 +16,8 @@ func chkfatal(err error) {
 func main() {
 	client, err := wayland.Dial("")
 	chkfatal(err)
-	display := client.GetDisplay()
-	registry, err := display.GetRegistry()
-	chkfatal(err)
-	registry.OnGlobal(func(name uint32, iface string, version uint32) {
-		fmt.Printf("new global: (%d, %s, %d)\n", name, iface, version)
+	client.OnGlobal(func(obj wayland.Object) {
+		fmt.Printf("new global: (%d, %s, %d)\n", obj.Id(), obj.Interface(), obj.Version())
 	})
 	chkfatal(client.Sync(func() {
 		os.Exit(0)
