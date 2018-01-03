@@ -65,14 +65,22 @@ func main() {
 		chkfatal(err)
 		bounds := img.Bounds()
 
-		// TODO: handle color model.
-		size := bounds.Dx() * bounds.Dy()
+		// We assume the xgrb8888 pixel format, which the protocol says all
+		// renderers should support.
+		size := bounds.Dx() * bounds.Dy() * 4
+
 		chkfatal(mfd.Truncate(int64(size)))
 		mfdBytes, err := mfd.Map()
 		chkfatal(err)
-		pool, err := shm.CreatePool(int(mfd.Fd()), size)
+		pool, err := shm.CreatePool(int(mfd.Fd()), int32(size))
 		chkfatal(err)
-		buf, err := pool.CreateBuffer(0, width, height /* TODO: stride, format */)
+		buf, err := pool.CreateBuffer(
+			0,
+			int32(bounds.Dx()),
+			int32(bounds.Dy()),
+			int32(4*bounds.Dx()),
+			wayland.ShmFormatXrgb8888,
+		)
 		chkfatal(err)
 	}))
 	chkfatal(client.MainLoop())
