@@ -1,3 +1,4 @@
 gen.go
 gen_test.go
 coverage.out
+*.swp
