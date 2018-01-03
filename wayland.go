@@ -179,25 +179,25 @@ func Dial(path string) (*Client, error) {
 		if client.onGlobal == nil {
 			return
 		}
-		id := ObjectId(name)
 		ifaceFn, ok := interfaceRegistry[interfaceIdent{
 			Name:    interface_,
 			Version: version,
 		}]
 		if ok {
+			id, err := client.registry.Bind(name)
+			if err != nil {
+				//TODO: better error handling.
+				client.receivedError = err
+				return
+			}
 			obj := ifaceFn(client, id)
-			// TODO: be defensive about adding this; check that it's in the server's
-			// allowed id range, isn't already present, etc.
-
-			// FIXME: actually inserting this causes an error later; the IDs are
-			// colliding with the registry, so we then get an error about an
-			// out-of-range event number.
-
-			// client.objects[id] = obj
+			client.objects[id] = obj
 			client.onGlobal(obj)
 		} else {
 			client.onGlobal(&UnknownInterface{
-				id:         id,
+				// We don't call Bind, so this has a null id:
+				id: 0,
+
 				interface_: interface_,
 				version:    version,
 			})
